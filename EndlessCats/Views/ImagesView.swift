@@ -25,7 +25,7 @@ struct ImagesView: View {
                 }
             }
             .padding(.top, 20)
-            .navigationTitle("Endless cats")
+            .navigationTitle(Constants.UI.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
         }
         .onAppear {
