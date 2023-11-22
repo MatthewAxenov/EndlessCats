@@ -9,6 +9,8 @@ import Foundation
 
 enum Constants {
     
+    //UI
+    
     enum UI {
         public static let imagesScrollTopPadding = 20.0
         public static let navigationTitle = "Endless cats"
