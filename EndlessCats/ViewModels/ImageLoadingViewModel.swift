@@ -21,24 +21,38 @@ final class ImageLoadingViewModel: ObservableObject {
     init(url: String?) {
         self.url = url
     }
-    
     func loadImage() {
-        
-        guard image == nil && !isLoading, let urlString = url, let fetchUrl = URL(string: urlString) else {
-            errorMessage = "Bad request"
-            return
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        networkingService.loadImage(from: fetchUrl) { [weak self] result in
-            self?.isLoading = false
-            switch result {
-            case .success(let image):
-                self?.image = image
-            case .failure(let error):
-                self?.errorMessage = error.localizedDescription
+        Task { [weak self] in
+            
+            guard let self = self else {
+                return
+            }
+            
+            guard self.image == nil && !self.isLoading,
+                  let urlString = self.url,
+                  let fetchUrl = URL(string: urlString) else {
+                Task { @MainActor in
+                    self.errorMessage = "Fetching images..."
+                }
+                return
+            }
+            
+            Task { @MainActor in
+                self.isLoading = true
+                self.errorMessage = nil
+            }
+            
+            do {
+                let loadedImage = try await networkingService.loadImage(from: fetchUrl)
+                Task { @MainActor in
+                    self.image = loadedImage
+                    self.isLoading = false
+                }
+            } catch {
+                Task { @MainActor in
+                    self.errorMessage = error.localizedDescription
+                    self.isLoading = false
+                }
             }
         }
     }

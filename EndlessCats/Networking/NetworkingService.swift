@@ -10,71 +10,43 @@ import SwiftUI
 
 final class NetworkingService {
     
-    func fetchImagesData(limit: Int, page: Int, completion: @escaping (Result<[CatImageModel], Error>) -> Void) {
+    func fetchImagesData(limit: Int, page: Int) async throws -> [CatImageModel] {
         let apiKey = Constants.Networking.apiKey
         let urlString = "https://api.thecatapi.com/v1/images/search?limit=\(limit)&page=\(page)&has_breeds=1&api_key=\(apiKey)"
         
         guard let url = URL(string: urlString) else {
-            completion(.failure(NetworkingError.invalidURL))
-            return
+            throw NetworkingError.invalidURL
         }
 
-        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            guard let data = data else {
-                completion(.failure(NetworkingError.noData))
-                return
-            }
+        let (data, response) = try await URLSession.shared.data(from: url)
 
-            let decoder = JSONDecoder()
-            decoder.keyDecodingStrategy = .convertFromSnakeCase
-
-            do {
-                let decodedResponse = try decoder.decode([CatImageModel].self, from: data)
-                completion(.success(decodedResponse))
-            } catch {
-                completion(.failure(error))
-            }
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw NetworkingError.invalidResponse
         }
-        
-        task.resume()
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        return try decoder.decode([CatImageModel].self, from: data)
     }
     
-    
-    func loadImage(from url: URL, completion: @escaping (Result<UIImage, Error>) -> Void) {
-        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-                
-                guard let httpResponse = response as? HTTPURLResponse,
-                      (200...299).contains(httpResponse.statusCode),
-                      let data = data,
-                      let image = UIImage(data: data) else {
-                    completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response or data"])))
-                    return
-                }
-                
-                completion(.success(image))
-            }
+    func loadImage(from url: URL) async throws -> UIImage {
+        let (data, response) = try await URLSession.shared.data(from: url)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode),
+              let image = UIImage(data: data) else {
+            throw NetworkingError.invalidResponse
         }
-        
-        task.resume()
+        return image
     }
 }
+
 
 enum NetworkingError: Error {
     case invalidURL
     case noData
+    case invalidResponse
 }
 

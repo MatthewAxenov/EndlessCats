@@ -30,16 +30,17 @@ final class ImagesViewModel: ObservableObject {
     }
     
     private func loadMoreContent() {
-        currentPage += 1
-        networkingService.fetchImagesData(limit: 10, page: currentPage) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let newImages):
-                    self?.images.append(contentsOf: newImages)
-                case .failure(let error):
-                    print("Error fetching images: \(error.localizedDescription)")
+        Task {
+            do {
+                currentPage += 1
+                let newImages = try await networkingService.fetchImagesData(limit: 10, page: currentPage)
+                Task { @MainActor in
+                    self.images.append(contentsOf: newImages)
                 }
+            } catch {
+                print("Error fetching images: \(error.localizedDescription)")
             }
         }
     }
 }
+

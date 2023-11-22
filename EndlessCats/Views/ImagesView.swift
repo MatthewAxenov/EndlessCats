@@ -24,7 +24,7 @@ struct ImagesView: View {
                     }
                 }
             }
-            .padding(.top, 20)
+            .padding(.top, Constants.UI.imagesScrollTopPadding)
             .navigationTitle(Constants.UI.navigationTitle)
             .navigationBarTitleDisplayMode(.large)
         }
