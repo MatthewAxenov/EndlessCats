@@ -9,7 +9,7 @@ import Foundation
 
 enum Constants {
     
-    //UI
+    //UI UI
     
     enum UI {
         public static let imagesScrollTopPadding = 20.0
